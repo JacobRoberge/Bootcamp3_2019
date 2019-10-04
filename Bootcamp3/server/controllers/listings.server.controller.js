@@ -1,9 +1,10 @@
 
+
 /* Dependencies */
-var mongoose = require('mongoose'), 
+var mongoose = require('mongoose'),
     Listing = require('../models/listings.server.model.js'),
     coordinates = require('./coordinates.server.controller.js');
-    
+
 /*
   In this file, you should use Mongoose queries in order to retrieve/add/remove/update listings.
   On an error you should send a 404 status code, as well as the error message. 
@@ -22,60 +23,112 @@ var mongoose = require('mongoose'),
  */
 
 /* Create a listing */
-exports.create = function(req, res) {
+exports.create = function (req, res) {
 
-  /* Instantiate a Listing */
-  var listing = new Listing(req.body);
+    /* Instantiate a Listing */
+    var listing = new Listing(req.body);
 
-  /* save the coordinates (located in req.results if there is an address property) */
-  if(req.results) {
-    listing.coordinates = {
-      latitude: req.results.lat, 
-      longitude: req.results.lng
-    };
-  }
- 
-  /* Then save the listing */
-  listing.save(function(err) {
-    if(err) {
-      console.log(err);
-      res.status(400).send(err);
-    } else {
-      res.json(listing);
-      console.log(listing)
+    /* save the coordinates (located in req.results if there is an address property) */
+    if (req.results) {
+        listing.coordinates = {
+            latitude: req.results.lat,
+            longitude: req.results.lng
+        };
     }
-  });
+
+    /* Then save the listing */
+    listing.save(function (err) {
+        if (err) {
+            console.log(err);
+            res.status(400).send(err);
+        } else {
+            res.json(listing);
+            console.log(listing);
+        }
+    });
 };
 
 /* Show the current listing */
-exports.read = function(req, res) {
-  /* send back the listing as json from the request */
-  res.json(req.listing);
+exports.read = function (req, res) {
+    /* send back the listing as json from the request */
+    res.json(req.listing);
+
 };
 
 /* Update a listing - note the order in which this function is called by the router*/
-exports.update = function(req, res) {
-  var listing = req.listing;
+exports.update = function (req, res) {
+    try {
+        var listing = req.listing;
+        listing.code = req.body.code;
+        listing.name = req.body.name;
+        if (listing.address) {
+            listing.address = req.body.address;
 
-  /* Replace the listings's properties with the new properties found in req.body */
- 
-  /*save the coordinates (located in req.results if there is an address property) */
- 
-  /* Save the listing */
+        }
+        if (req.results) {
+            listing.coordinates = {
+                latitude: req.results.lat,
+                longitude: req.results.lng
+            };
+        }
+        
+        listing.save(function (err) {
+            if (err) {
+                console.log(err);
+                res.status(404).send(err);
+            } else {
+                res.json(listing);
+                console.log(listing);
+            }
+        });
+    }
+    catch (err) { console.log(err);}
+    //Listing.findByIdAndUpdate(req.body.id,
+    //    { coordinates: [{ latitude: req.body.latitude, longitude: req.body.longitude }] }, { new: true },
+    //    function (err, listyBoi) {
+    //        if (err) res.status(400).send(err);
+    //        else res.send(listyBoi);
+
+    //    });
+
+    /* Replace the listings's properties with the new properties found in req.body */
+
+    /*save the coordinates (located in req.results if there is an address property) */
+
+    /* Save the listing */
 
 };
 
 /* Delete a listing */
-exports.delete = function(req, res) {
-  var listing = req.listing;
+exports.delete = function (req, res) {
+    var listing = req.listing;
 
-  /* Add your code to remove the listins */
+    Listing.findOneAndDelete({ _id: listing._id },
+        function (err, listyBoi) {
+            if (err) {
+                res.status(404).send(err);
+            }
+            else { res.json(listyBoi) };
+
+        });
+
+    /* Add your code to remove the listins */
 
 };
 
 /* Retreive all the directory listings, sorted alphabetically by listing code */
-exports.list = function(req, res) {
-  /* Add your code */
+exports.list = function (req, res) {
+/* Add your code */
+
+    Listing.find({}, null, { sort: { code: 1 } }, function (err, listing) {
+        if (err) {
+            res.status(404).send(err);        }
+        else {
+            res.json(listing);
+
+            //console.log(listing);
+        }
+    });
 };
 
 /* 
@@ -85,13 +138,13 @@ exports.list = function(req, res) {
         bind it to the request object as the property 'listing', 
         then finally call next
  */
-exports.listingByID = function(req, res, next, id) {
-  Listing.findById(id).exec(function(err, listing) {
-    if(err) {
-      res.status(400).send(err);
-    } else {
-      req.listing = listing;
-      next();
-    }
-  });
+exports.listingByID = function (req, res, next, id) {
+    Listing.findById(id).exec(function (err, listing) {
+        if (err) {
+            res.status(400).send(err);
+        } else {
+            req.listing = listing;
+            next();
+        }
+    });
 };
